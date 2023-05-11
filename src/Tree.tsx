@@ -1,161 +1,264 @@
-import { ReactNode, useEffect, useState, Fragment } from "react"
+import {
+  ReactNode,
+  useEffect,
+  useState,
+  Fragment,
+  useRef,
+  ChangeEvent,
+} from "react";
+import { isValidJson } from "./utils/isValidJson";
+import { isValidTree } from "./utils/isValidTree";
 
-import './Tree.css'
+import "./Tree.css";
 
 export default function Tree() {
+  const [tree, setTree] = useState(null);
+  const [treeError, setTreeError] = useState(false);
+  const [childKey, setChildKey] = useState("children");
+  const [childKeyError, setChildKeyError] = useState(false);
+  const [leafValue, setLeafValue] = useState("");
+  const [leafValueError, setLeafValueError] = useState(false);
+  const [scale, setScale] = useState(1);
 
-  const [tree, setTree] = useState(null)
-  const [childKey, setChildKey] = useState('children')
-  const [nodeValue, setNodeValue] = useState('value')
+  const [generate, setGenerate] = useState(false);
+  const [domTree, setDomTree] = useState<ReactNode | null>(null);
+  const [leafData, setLeafData] = useState<ReactNode | null>(null);
 
-  const [nodeList, setNodeList] = useState<any[]>([])
-  const [domTree, setDomTree] = useState<ReactNode | null>(null)
+  const domTreeRef = useRef<HTMLElement | null>(null);
+  const domTreeContainerRef = useRef<HTMLElement | null>(null);
 
   let nodeCount = 0;
 
   useEffect(() => {
+    setDomTree(traverseTree(tree));
 
-    setDomTree(traverseTree(tree))
-  
-    return () => {}
-  }, [nodeList])
-  
+    if (domTreeRef.current)
+      domTreeRef.current.style.transform = `scale(${1 - scale / 20})`;
+
+    if (domTreeContainerRef.current)
+      domTreeContainerRef.current.scrollLeft =
+        domTreeContainerRef.current.scrollWidth / 2 -
+        domTreeContainerRef.current.clientWidth / 2;
+
+    if (generate) setGenerate(false);
+
+    return () => {};
+  }, [scale, generate]);
 
   const traverseTree = (tree: any) => {
-    if (!tree) return
+    if (!tree) return;
+    if (!Array.isArray(tree[childKey])) {
+      setChildKeyError(true);
+      return;
+    }
+    if (leafValue && !tree[leafValue]) {
+      setLeafValueError(true);
+      return;
+    }
 
-    nodes.push(tree)
+    setChildKeyError(false);
+    setLeafValueError(false);
 
-    const order = Symbol('order')
+    nodes.push(tree);
 
-      tree[order] = ++nodeCount;
+    const order = Symbol("order");
 
-      const keysList = Object.keys(tree).map((key: string) => {
-        if (key !== childKey) return <li>{key + " : " + tree[key]}</li>
-      });
+    tree[order] = ++nodeCount;
 
-      const childNodeList = tree[childKey].map((childNode: any, i: number) => {
-        return <Fragment key={i}>{traverseTree(childNode)}</Fragment>
-      })
-console.log(tree[order])
+    const keysList = Object.keys(tree).map((key: string) => {
+      if (key !== childKey) return <li>{key + " : " + tree[key]}</li>;
+    });
+
+    const childNodeList = tree[childKey].map((childNode: any, i: number) => {
+      return <Fragment key={i}>{traverseTree(childNode)}</Fragment>;
+    });
+
     return (
-      <div className={`subTree relative flex flex-col items-center -mt-1
-      after:content-[''] after:absolute after:top-0 after:right-0 after:translate-x-full after:h-1 after:w-full
-
-      
-      before:content-[''] before:absolute before:top-0 before:right-1/2 before:-translate-x-14 before:h-1 before:w-full before:z-10
-
-      after:last:h-1 after:last:right-0 after:last:w-1/2 after:last:bg-gray-600
-
-      before:last:content-[''] before:last:absolute before:last:top-0 before:last:right-1/2 before:last:translate-x-14  before:last:h-1 before:last:w-28 before:last:bg-gray-600 before:last:z-10
-
-      before:first:content-[''] before:first:absolute before:first:top-0 before:first:right-1/2 before:first:-translate-x-14 before:first:h-1 before:first:w-full before:first:bg-gray-600  before:first:z-10
-
-      ${tree.children.length < 2 || tree[order] === 1 ? 'border-t-0 after:translate-x-0 after:w-[200%] after:left-0 after:last:border-t-0' : 'after:last:left-0 '}`}>
-
-        <div className={`relative group-first:-translate-x-full
-        w-auto group mt-[70px] mb-10 translate-x-6
-        before:absolute before:content-[''] before:w-1 before:h-10 before:-top-7 before:-left-3 before:bg-pink-800 before:-rotate-45 before:translate-x-1/2
-        
-        after:content-[''] after:absolute after:top-1 after:-left-6 after:w-1 after:bg-orange-950
-
-        ${tree[order] === 1 ? "after:h-[155%] after:-translate-y-[25px]" : tree.children.length > 0 ? "after:h-[200%] after:-translate-y-1/3" : " after:h-[45%] after:-translate-y-[150%]"}`}>
-
-          <ul className="tooltip absolute hidden group-hover:flex flex-col justify-center items-center z-10 top-1/3 left-2/3 whitespace-nowrap rounded-sm bg-orange-700 border p-2">
+      <div
+        ref={
+          tree[order] === 1
+            ? (domTreeRef as React.LegacyRef<HTMLDivElement>)
+            : undefined
+        }
+        className={`subTree 
+          ${
+            tree.children.length < 2 || tree[order] === 1
+              ? "border-t-0 after:left-0 after:w-[200%] after:translate-x-0 after:last:border-t-0"
+              : "after:last:left-0"
+          }`}
+      >
+        <div
+          onMouseOver={() => setLeafData(keysList)}
+          onMouseLeave={() => setLeafData(null)}
+          className={`leaf-wrapper group
+            ${
+              tree[order] === 1
+                ? "after:h-[155%] after:-translate-y-[25px]"
+                : tree.children.length > 0
+                ? "after:h-[200%] after:-translate-y-1/3"
+                : " after:h-[45%] after:-translate-y-[150%]"
+            }`}
+        >
+          <ul className="tooltip absolute -left-full -top-1/3 z-10 hidden flex-col items-center justify-center whitespace-nowrap rounded-sm border bg-orange-700 p-2 group-hover:flex">
             {keysList}
           </ul>
 
-          <div className="leaf bg-pink-800 w-28 h-28 aspect-square flex flex-col justify-center items-center z-1 after:content-[''] after:absolute after:top-0 after:right-1/2 after:translate-x-1/2 after:w-[.5px] after:h-full after:bg-yellow-200 after:-rotate-45">
-            <h3 className="bg-pink-800 z-10 ">{tree[order]}</h3>
+          <div className="leaf">
+            <h3 className="z-10 bg-pink-800 ">
+              {leafValue ? tree[leafValue] : tree[order]}
+            </h3>
           </div>
         </div>
 
-        <section className="childNodes flex gap-28 justify-between border-t-4 border-t-orange-950">
+        <section
+          className={`childNodes flex justify-between gap-28 border-t-orange-950 ${
+            childNodeList.length > 1 ? "border-t-4" : "border-t-0"
+          }`}
+        >
           {childNodeList}
         </section>
       </div>
-    )
-  }
-  
+    );
+  };
+
   const traverse = (tree: any) => {
+    nodes.push(tree);
 
-    nodes.push(tree)
+    if (tree[childKey]) tree[childKey].forEach((node: any) => traverse(node));
+  };
 
-    if (tree[childKey]) tree[childKey].forEach((node: any) => traverse(node))
+  const nodes: any[] = [];
 
-  }
+  const handleTextareaChange = (e: ChangeEvent<HTMLTextAreaElement>) => {
+    if (
+      !isValidJson(e.target.value.trim()) ||
+      !isValidTree(e.target.value.trim())
+    )
+      return setTreeError(true);
+    else setTreeError(false);
 
-  const nodes: any[] = []
-
-  function handleClick() {
-    
-
-    if (!tree || !childKey) return;
-
-
-    traverse(tree)
-
-    console.log(nodes)
-
-    setNodeList(nodes.map((node: any, i) => {
-
-      const order = Symbol('order')
-
-      node[order] = i+1;
-
-      const keysList = Object.keys(node).map((key: string) => {
-        if (key !== childKey) return <li>{key + " : " + node[key]}</li>
-      }      )
-
-
-      return (
-
-        <div className="relative 
-        w-auto group mt-20 
-        before:absolute before:content-[''] before:w-1 before:h-10 before:-bottom-3 before:right-1/2 before:bg-green-500 before:translate-x-1/2 
-        after:content-[''] after:absolute after:bottom after:right-3/4 after:translate-x-1/2 after:w-1 after:h-20 after:bg-orange-950 ">
-          <div className="leaf bg-green-500 w-28 h-28 aspect-square flex flex-col justify-center items-center z-1 after:content-[''] after:absolute after:top-2 after:right-1/2 after:translate-x-1/2 after:w-[.5px] after:h-full after:bg-yellow-200">
-            <h3 className="bg-green-500 z-10 ">{node[order]}</h3>
-          </div>
-            <ul className="tooltip absolute hidden group-hover:flex flex-col justify-center items-center z-10 -top-1/3 left-1/3 whitespace-nowrap rounded-sm bg-orange-950 border text-green-500 p-2 ">
-              {keysList}
-            </ul>
-        </div>
-      )
-    }))
-  }
+    setTree(JSON.parse(e.target.value.trim()));
+  };
 
   return (
     <>
-      <section className="px-10 flex flex-col gap-5">
+      <section className="mx-auto flex max-w-7xl flex-col gap-5 px-10">
+        <p className="px-5 py-5 text-slate-200">
+          Enter your full tree and the key identifying the child nodes of a
+          given tree node
+        </p>
 
-        <p className="text-slate-200 py-10">Enter your full tree and the key identifying the child nodes of a given tree node</p>
+        <div className="tree-input flex">
+          <label
+            htmlFor="tree"
+            className="flex grow flex-col gap-3 px-5 text-slate-200"
+          >
+            Tree
+            <textarea
+              id="tree"
+              className="bg-slate-800 text-slate-200 shadow-2xl"
+              onChange={handleTextareaChange}
+              rows={10}
+              placeholder=""
+            />
+            {treeError && (
+              <span className="text-red-600">
+                Invalid tree syntax. Consider generating a random tree.
+              </span>
+            )}
+          </label>
+          <div className="tree-generate-btns flex flex-col justify-around gap-3 px-5 pt-9 text-slate-200">
+            <button className="w-32 border border-slate-200 bg-slate-800 p-5 uppercase text-slate-200 shadow-2xl hover:bg-slate-700">
+              random
+            </button>
+            <button className="w-32 border border-slate-200 bg-slate-800 p-5 uppercase text-slate-200 shadow-2xl hover:bg-slate-700">
+              binary
+            </button>
+            <button className="w-32 border border-slate-200 bg-slate-800 p-5 uppercase text-slate-200 shadow-2xl hover:bg-slate-700">
+              skewed&nbsp;BST
+            </button>
+          </div>
+        </div>
 
-        <label htmlFor="tree" className="text-slate-200 underline px-5 flex flex-col gap-3">Tree
-          <input type="textarea" id="tree" className="bg-slate-800 text-slate-200" onChange={(e) => setTree(JSON.parse(e.target.value.trim()))} />
+        <label
+          htmlFor="childKey"
+          className="flex flex-col gap-3 px-5 text-slate-200"
+        >
+          ChildArrayKey
+          <input
+            type="text"
+            id="childKey"
+            className="bg-slate-800 text-slate-200 shadow-2xl"
+            onChange={(e) => setChildKey(e.target.value.trim())}
+          />
+          {childKeyError && (
+            <span className="text-red-600">
+              Key not found on tree or value is not an array of nodes
+            </span>
+          )}
         </label>
 
-        <label htmlFor="childKey" className="text-slate-200 underline gap-3 px-5 flex flex-col">
-          ChildKey
-          <input type="textarea" id="childKey" className="bg-slate-800 text-slate-200" onChange={(e) => setChildKey(e.target.value.trim())} />
+        <label
+          htmlFor="nodeValue"
+          className="sap-3 flex flex-col px-5 text-slate-200"
+        >
+          Leaf Value Key
+          <input
+            type="text"
+            id="nodeValue"
+            className="bg-slate-800 text-slate-200 shadow-2xl"
+            onChange={(e) => setLeafValue(e.target.value.trim())}
+          />
+          {leafValueError && (
+            <span className="text-red-600">
+              Key not found on tree or must be of type string
+            </span>
+          )}
         </label>
 
-        <label htmlFor="nodeValue" className="text-slate-200 underline px-5 flex flex-col sap-3">Leaf Value
-          <input type="textarea" id="nodeValue" className="bg-slate-800 text-slate-200" onChange={(e) => setNodeValue(e.target.value.trim())} />
-        </label>
-
-        <button onClick={handleClick} className="bg-slate-800 text-slate-200 rounded-full px-5 py-3 uppercase border-2 mx-auto cursor-pointer border-slate-200 max-w-[150px]">Generate</button>
-
+        <button
+          className="mx-auto max-w-[150px] cursor-pointer rounded-full border-2 border-slate-200 bg-slate-800 px-5 py-3 uppercase text-slate-200 disabled:cursor-not-allowed disabled:border-slate-600 disabled:text-slate-600"
+          onClick={() => setGenerate(true)}
+          disabled={!tree}
+        >
+          Generate
+        </button>
       </section>
-      <section className="p-10 flex flex-wrap gap-y-10">
-        {nodeList}
-      </section>
-      <section className="p-10 flex flex-wrap gap-y-10 justify-center">
+
+      <div className="flex w-full justify-end">
+        <button
+          className="zoomOut mx-10 h-10 w-32 cursor-zoom-in border-purple-50 bg-white disabled:cursor-not-allowed disabled:bg-gray-700"
+          disabled={scale <= 1}
+          onClick={() => setScale(scale - 1)}
+        >
+          +
+        </button>
+        <img
+          className="zoomOut mx-10 h-10 cursor-pointer invert"
+          src="../images/refresh.svg"
+          onClick={() => setScale(1)}
+        />
+        <button
+          className="zoomIn mx-10 h-10 w-32 cursor-zoom-out border-purple-50 bg-white disabled:bg-gray-700"
+          disabled={scale === 19}
+          onClick={() => setScale(scale + 1)}
+        >
+          -
+        </button>
+      </div>
+
+      <div className="leaf-data-wrapper flex flex-col items-center justify-center">
+        <div className="leaf-data h-36 w-36 border-2 border-orange-200 bg-orange-700">
+          <h3 className="text-center underline">Node Info</h3>
+          <ul className="text-center">{leafData}</ul>
+        </div>
+      </div>
+      <section
+        className="scrollbar scroll-1/2 my-5 flex flex-wrap gap-y-10 overflow-x-auto border-4 border-dotted border-black px-20"
+        ref={domTreeContainerRef}
+      >
         {domTree && domTree}
       </section>
     </>
-
-  )
+  );
 }
-
-
