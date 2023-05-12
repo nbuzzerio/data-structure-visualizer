@@ -32,6 +32,15 @@ export default function Tree() {
   let nodeCount = 0;
 
   useEffect(() => {
+    if (!scale) setScale(1);
+
+    if (domTreeContainerRef.current)
+      domTreeContainerRef.current.scrollLeft =
+        domTreeContainerRef.current.scrollWidth / 2 -
+        domTreeContainerRef.current.clientWidth / 2;
+  }, [scale]);
+
+  useEffect(() => {
     if (!tree) setDomTree(traverseTree(tree));
   }, [tree]);
 
@@ -253,9 +262,9 @@ export default function Tree() {
           +
         </button>
         <img
-          className="zoomOut mx-10 h-10 cursor-pointer invert"
+          className="mx-10 h-10 cursor-pointer invert"
           src="../images/refresh.svg"
-          onClick={() => setScale(1)}
+          onClick={() => setScale(0)}
         />
         <button
           className="zoomIn mx-10 h-10 w-32 cursor-zoom-out border-purple-50 bg-white disabled:bg-gray-700"
