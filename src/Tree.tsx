@@ -10,6 +10,7 @@ import { isValidJson } from "./utils/isValidJson";
 import { isValidTree } from "./utils/isValidTree";
 
 import "./Tree.css";
+import { generateRandomTree } from "./utils/generateRandomTree";
 
 export default function Tree() {
   const [tree, setTree] = useState(null);
@@ -18,6 +19,7 @@ export default function Tree() {
   const [childKeyError, setChildKeyError] = useState(false);
   const [leafValue, setLeafValue] = useState("");
   const [leafValueError, setLeafValueError] = useState(false);
+
   const [scale, setScale] = useState(1);
 
   const [generate, setGenerate] = useState(false);
@@ -28,6 +30,10 @@ export default function Tree() {
   const domTreeContainerRef = useRef<HTMLElement | null>(null);
 
   let nodeCount = 0;
+
+  useEffect(() => {
+    if (!tree) setDomTree(traverseTree(tree));
+  }, [tree]);
 
   useEffect(() => {
     setDomTree(traverseTree(tree));
@@ -49,10 +55,12 @@ export default function Tree() {
     if (!tree) return;
     if (!Array.isArray(tree[childKey])) {
       setChildKeyError(true);
+      setChildKey("children");
       return;
     }
     if (leafValue && !tree[leafValue]) {
       setLeafValueError(true);
+      setLeafValue("");
       return;
     }
 
@@ -159,7 +167,7 @@ export default function Tree() {
               className="bg-slate-800 text-slate-200 shadow-2xl"
               onChange={handleTextareaChange}
               rows={10}
-              placeholder=""
+              value={tree ? JSON.stringify(tree) : ""}
             />
             {treeError && (
               <span className="text-red-600">
@@ -168,13 +176,22 @@ export default function Tree() {
             )}
           </label>
           <div className="tree-generate-btns flex flex-col justify-around gap-3 px-5 pt-9 text-slate-200">
-            <button className="w-32 border border-slate-200 bg-slate-800 p-5 uppercase text-slate-200 shadow-2xl hover:bg-slate-700">
+            <button
+              className="w-32 border border-slate-200 bg-slate-800 p-5 uppercase text-slate-200 shadow-2xl hover:bg-slate-700"
+              onClick={() => setTree(generateRandomTree(childKey, leafValue))}
+            >
               random
             </button>
-            <button className="w-32 border border-slate-200 bg-slate-800 p-5 uppercase text-slate-200 shadow-2xl hover:bg-slate-700">
+            <button
+              className="w-32 border border-slate-200 bg-slate-800 p-5 uppercase text-slate-200 shadow-2xl hover:bg-slate-700"
+              onClick={() => setTree(JSON.parse(random))}
+            >
               binary
             </button>
-            <button className="w-32 border border-slate-200 bg-slate-800 p-5 uppercase text-slate-200 shadow-2xl hover:bg-slate-700">
+            <button
+              className="w-32 border border-slate-200 bg-slate-800 p-5 uppercase text-slate-200 shadow-2xl hover:bg-slate-700"
+              onClick={() => setTree(null)}
+            >
               skewed&nbsp;BST
             </button>
           </div>
@@ -190,6 +207,7 @@ export default function Tree() {
             id="childKey"
             className="bg-slate-800 text-slate-200 shadow-2xl"
             onChange={(e) => setChildKey(e.target.value.trim())}
+            value={childKey}
           />
           {childKeyError && (
             <span className="text-red-600">
@@ -208,6 +226,7 @@ export default function Tree() {
             id="nodeValue"
             className="bg-slate-800 text-slate-200 shadow-2xl"
             onChange={(e) => setLeafValue(e.target.value.trim())}
+            value={leafValue}
           />
           {leafValueError && (
             <span className="text-red-600">
@@ -262,3 +281,6 @@ export default function Tree() {
     </>
   );
 }
+
+const random =
+  '{"name": "Node A","data1": "123","data2": "abc","data3": true,"children": [  {    "name": "Node A1",    "data1": "456",    "data2": "def",    "data3": false,    "children": [      {        "name": "Node A1.1",        "data1": "789",        "data2": "ghi",        "data3": true,        "children": []      },      {        "name": "Node A1.2",        "data1": "101",        "data2": "jkl",        "data3": false,        "children": []      }    ]  },  {    "name": "Node A2",    "data1": "112",    "data2": "mno",    "data3": true,    "children": [      {        "name": "Node A2.1",        "data1": "131",        "data2": "pqr",        "data3": false,        "children": []      },      {        "name": "Node A2.2",        "data1": "415",        "data2": "stu",        "data3": true,        "children": [          {            "name": "Node A2.2.1",            "data1": "926",            "data2": "vwx",            "data3": false,            "children": []          }        ]      }    ]  },  {    "name": "Node A3",    "data1": "839",    "data2": "yza",    "data3": true,    "children": [      {        "name": "Node A3.1",        "data1": "657",        "data2": "bcd",        "data3": false,        "children": [          {            "name": "Node A3.1.1",            "data1": "483",            "data2": "efg",            "data3": true,            "children": []          },          {            "name": "Node A3.1.2",            "data1": "295",            "data2": "hij",            "data3": false,            "children": []          }        ]      },      {        "name": "Node A3.1",        "data1": "657",        "data2": "bcd",        "data3": false,        "children": [          {            "name": "Node A3.1.1",            "data1": "483",            "data2": "efg",            "data3": true,            "children": []          },          {            "name": "Node A3.1.2",            "data1": "295",            "data2": "hij",            "data3": false,            "children": []          }        ]      },      {        "name": "Node A3.1",        "data1": "657",        "data2": "bcd",        "data3": false,        "children": [          {            "name": "Node A3.1.1",            "data1": "483",            "data2": "efg",            "data3": true,            "children": []          },          {            "name": "Node A3.1.2",            "data1": "295",            "data2": "hij",            "data3": false,            "children": []          }        ]      },      {        "name": "Node A3.1",        "data1": "657",        "data2": "bcd",        "data3": false,        "children": [          {            "name": "Node A3.1.1",            "data1": "483",            "data2": "efg",            "data3": true,            "children": []          },          {            "name": "Node A3.1.2",            "data1": "295",            "data2": "hij",            "data3": false,            "children": []          }        ]      },      {        "name": "Node A3.1",        "data1": "657",        "data2": "bcd",        "data3": false,        "children": [          {            "name": "Node A3.1.1",            "data1": "483",            "data2": "efg",            "data3": true,            "children": []          },          {            "name": "Node A3.1.2",            "data1": "295",            "data2": "hij",            "data3": false,            "children": []          }        ]      },      {        "name": "Node A3.1",        "data1": "657",        "data2": "bcd",        "data3": false,        "children": [          {            "name": "Node A3.1.1",            "data1": "483",            "data2": "efg",            "data3": true,            "children": []          },          {            "name": "Node A3.1.2",            "data1": "295",            "data2": "hij",            "data3": false,            "children": []          }        ]      },      {        "name": "Node A3.2",        "data1": "846",        "data2": "klm",        "data3": true,        "children": [          {            "name": "Node A3.2.1",            "data1": "739",            "data2": "nop",            "data3": false,            "children": []          }        ]      }    ]  }]}';
