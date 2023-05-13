@@ -11,6 +11,7 @@ import { isValidTree } from "./utils/isValidTree";
 
 import "./Tree.css";
 import { generateRandomTree } from "./utils/generateRandomTree";
+import { generateSkewedBinaryTree } from "./utils/generateSkewedBinaryTree";
 
 export default function Tree() {
   const [tree, setTree] = useState(null);
@@ -193,13 +194,17 @@ export default function Tree() {
             </button>
             <button
               className="w-32 border border-slate-200 bg-slate-800 p-5 uppercase text-slate-200 shadow-2xl hover:bg-slate-700"
-              onClick={() => setTree(JSON.parse(random))}
+              onClick={() =>
+                setTree(generateSkewedBinaryTree(childKey, leafValue))
+              }
             >
               binary
             </button>
             <button
               className="w-32 border border-slate-200 bg-slate-800 p-5 uppercase text-slate-200 shadow-2xl hover:bg-slate-700"
-              onClick={() => setTree(null)}
+              onClick={() =>
+                setTree(generateSkewedBinaryTree(childKey, leafValue))
+              }
             >
               skewed&nbsp;BST
             </button>
@@ -268,7 +273,7 @@ export default function Tree() {
         />
         <button
           className="zoomIn mx-10 h-10 w-32 cursor-zoom-out border-purple-50 bg-white disabled:bg-gray-700"
-          disabled={scale === 19}
+          disabled={scale === 10}
           onClick={() => setScale(scale + 1)}
         >
           -
@@ -282,7 +287,7 @@ export default function Tree() {
         </div>
       </div>
       <section
-        className="scrollbar scroll-1/2 my-5 flex flex-wrap gap-y-10 overflow-x-auto border-4 border-dotted border-black px-20"
+        className="scrollbar scroll-1/2 my-5 flex max-h-[50vh] flex-wrap gap-y-10 overflow-auto border-4 border-dotted border-black px-20"
         ref={domTreeContainerRef}
       >
         {domTree && domTree}
